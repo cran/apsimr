@@ -1,0 +1,12 @@
+importFrom(lubridate,dmy)
+importFrom(reshape2,melt)
+import(ggplot2,XML)
+
+S3method(plot,apsim)
+
+export(edit_apsim)
+export(example_apsim)
+export(apsim)
+export(edit_sim_file)
+
+exportClasses(apsim)
