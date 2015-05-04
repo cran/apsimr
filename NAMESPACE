@@ -1,12 +1,19 @@
 importFrom(lubridate,dmy)
 importFrom(reshape2,melt)
+importFrom(MASS,mvrnorm)
+importFrom(mgcv,gam)
 import(ggplot2,XML)
 
 S3method(plot,apsim)
+S3method(plot,gamSA)
+S3method(print,gamSA)
 
-export(edit_apsim)
-export(example_apsim)
 export(apsim)
+export(apsim_vector)
+export(edit_apsim)
 export(edit_sim_file)
+export(example_apsim)
+export(apsim_emul_sa)
 
 exportClasses(apsim)
+exportClasses(gamSA)

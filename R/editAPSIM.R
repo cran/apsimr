@@ -1,4 +1,6 @@
-#' Edit an APSIM simulation
+#' Edit an APSIM Simulation
+#' 
+#' This function allows you to edit a file ending in ".apsim".
 #' 
 #' The variables specified by \code{var} within the .apsim file specified by \code{file} 
 #' in the working directory \code{wd} are edited. The old values are replaced with \code{value}, which
@@ -12,29 +14,36 @@
 #' @param var vector of variables to be edited
 #' @param value list of new values for the specified variables
 #' @param overwrite logical; if \code{TRUE} the old file is overwritten, a new file is written otherwise
-#' @return character string containing the resulting XML content
+#' @return complete file path to edited .apsim file is returned as a character string
+#' @export
 #' @examples
 #' \dontrun{
 #' #The file I want to edit is called "Canopy.apsim" which is in the directory "~/APSIM"
-#' file <- "Canopy.apsim"
-#' wd <- "~/APSIM"
+#' apsimFile <- "Canopy.apsim"
+#' apsimWd <- "~/APSIM"
 #' 
 #' #I want to change the Thickness of the Soilwater, the SoilCN of the SoilOrganicMatter and
 #' #the state at which the simulation is being run.
-#' var <- c("SoilWater/Thickness", "SoilOrganicMatter/SoilCN", "State")
+#' apsimVar <- c("SoilWater/Thickness", "SoilOrganicMatter/SoilCN", "State")
 #' 
 #' #Change SoilWater-Thickness to 200,200,300x9
 #' #Change SoilCN to 10
 #' #Change "State" to "NSW"
-#' value <- list(c(rep(200, 2), rep(300, 9)), 10, "NSW")
+#' apsimValue <- list(c(rep(200, 2), rep(300, 9)), 9, "NSW")
 #' 
 #' #Edit the apsim file without overwriting it
-#' edit_apsim(file, wd, var, value, overwrite = FALSE)
+#' edit_apsim(file = apsimFile, wd = apsimWd, var = apsimVar, value = apsimValue, overwrite = FALSE)
 #' 
 #' #Run the edited simulation
-#' exe <-"C:/Program Files (x86)/Apsim76-r3376/Model/Apsim.exe"
+#' apsimExe <-"C:/Program Files (x86)/Apsim75-r3008/Model/Apsim.exe"
 #' 
-#' results <- apsim(exe, wd, files = "Canopy-edited.apsim")
+#' results <- apsim(apsimExe, apsimWd, files = "Canopy-edited.apsim")
+#' 
+#' #Passing a simulation file to  edit_apsim will give you a warning and redirect it to edit_sim_file
+#' simFile <- "Soil.xml"
+#' simValue <- list(abs(rnorm(1)), abs(rnorm(1)), c(0,2,2,1))
+#' simVar <- c("nitrification_pot", "dnit_nitrf_loss","wfnit_values")
+#' edit_apsim(file = simFile, wd = apsimWd, var = simVar, value = simValue, overwrite = FALSE)
 #' }
 
 edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
@@ -42,10 +51,15 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
   oldWD<-getwd()
   setwd(wd)
   
+  if(length(grep(".xml$",file))>0){
+    warning("Specified file is an xml and will be passed to edit_sim_file.")
+    return(edit_sim_file(file = file, wd = wd, var = var, value = value, overwrite = overwrite))
+  }
+  
   fileNames <- dir(,pattern=".apsim$")
   
   if(length(fileNames)==0){
-    stop("There are no .apsim files in the folder wd to edit.")
+    stop("There are no .apsim files in the specified directory 'wd' to edit.")
   }
   
   file<-match.arg(file,fileNames,several.ok=TRUE)
@@ -57,29 +71,31 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
     vari<-pXML[[paste("//",var[i],sep="")]]
     
     #If supplied length is shorter then length to replace, then
-    #replicate the last value enough times to fill the void, give message
+    #leave the remaining values unchanged
     lToReplace<-xmlSize(vari)
     lReplace<-length(value[[i]])
     lenDiff<-lToReplace-lReplace
     
     if(lenDiff>0){
-      value[[i]]<-c(value[[i]],rep(value[[i]][lReplace],lenDiff))
-      warning(paste("Supplied values for",var[i],"was too short",sep=" "))
+      #value[[i]]<-c(value[[i]],rep(value[[i]][lReplace],lenDiff))
+      warning(paste("Only the first",lReplace,"of the",lToReplace,"elements of",var[i],"were changed",sep=" "))
     }
     
-    for(j in 1:lToReplace){
+    for(j in 1:lReplace){
       xmlValue(vari[[j]])<-as.character(value[[i]][j])
     }
     
   }
+  #Be sure the edited file is written to the specified wd and not the current wd
+  addWd <- paste(wd,file,sep="/")
   
   if(overwrite){
     setwd(oldWD)
-    return(saveXML(pXML,file=file))
+    return(saveXML(pXML,file=addWd))
   }else{
     
     #Remove .apsim tag if present and add edited tag
-    newName<-paste(gsub(".apsim","",file),"-edited",sep="")
+    newName<-paste(gsub(".apsim","",addWd),"-edited",sep="")
     
     #Rename the simulation
     wholeSim<-pXML[["//simulation"]]    
@@ -98,7 +114,10 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
   }
 }
 
-#' Edit an APSIM module file
+#' Edit an APSIM Module File
+#' 
+#' APSIM helper files, such as "Soil.xml" have a different format from .apsim files
+#' and are therefore edited differently.
 #' 
 #' APSIM uses .xml files to dictate how certain processes are carried out.  Similar to
 #' \code{\link{edit_apsim}} this function edits a file that will be used in an APSIM simulation.  Unlike
@@ -114,22 +133,29 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
 #' @param wd directory containing the .xml file to be edited; defaults to the current wd
 #' @param var vector of variables to be edited
 #' @param value list of new values for the specified variables
-#' @param overwrite logical; if \code{TRUE} the old file is overwritten, a new file is written otherwise
-#' @return character string containing the resulting XML content
+#' @param overwrite logical; if \code{TRUE} the old file is overwritten, otherwise a new file is written 
+#' @return complete file path to edited simulation file is returned as a character string
+#' @export
 #' @examples
 #' \dontrun{
 #' #The file I want to edit is called "Soil.xml" which is the the directory "~/APSIM"
-#' file <- "Soil.xml"
-#' wd <- "~/APSIM"
+#' simFile <- "Soil.xml"
+#' apsimWd <- "~/APSIM"
 #' 
 #' #I want to change the potential nitrification and N2O from nitrification
-#' var <- c("nitrification_pot", "dnit_nitrf_loss")
+#' simVar <- c("nitrification_pot", "dnit_nitrf_loss","wfnit_values")
 #' 
 #' #Change both to absolute values of random N(0,1) 
-#' value <- list(abs(rnorm(1)), abs(rnorm(1)))
+#' simValue <- list(abs(rnorm(1)), abs(rnorm(1)), c(0,2,2,1))
 #' 
 #' #Edit Soil.xml without overwriting it
-#' edit_sim_file(file, wd, var, value, overwrite = FALSE)
+#' edit_sim_file(file = simFile, wd = apsimWd, var = simVar, value = simValue, overwrite = FALSE)
+#' 
+#' #Passing an .apsim file to edit_sim_file will give a warning and redirect it to edit_apsim
+#' apsimFile <- "Canopy.apsim"
+#' apsimValue <- list(c(rep(200, 2), rep(300, 9)), 9, "NSW")
+#' apsimVar <- c("SoilWater/Thickness", "SoilOrganicMatter/SoilCN", "State")
+#' edit_sim_file(file = apsimFile, wd = apsimWd, var = apsimVar, value = apsimValue, overwrite = FALSE)
 #' }
 
 edit_sim_file <- function(file, wd = getwd(), var, value, overwrite = FALSE){
@@ -141,6 +167,11 @@ edit_sim_file <- function(file, wd = getwd(), var, value, overwrite = FALSE){
     stop("Specified file could not be found in the current working directory.")
   }
   
+  if(length(grep(".apsim$",file))>0){
+    warning("Specified file is an APSIM simulation file and will be passed to edit_apsim.")
+    return(edit_apsim(file = file, wd = wd, var = var, value = value, overwrite = overwrite))
+  }
+  
   pXML<-xmlParse(file)
   
   for(i in 1:length(var)){
@@ -149,28 +180,31 @@ edit_sim_file <- function(file, wd = getwd(), var, value, overwrite = FALSE){
     
     #If supplied length is shorter then length to replace, then
     #replicate the last value enough times to fill the void, give message
-    lToReplace<-xmlSize(vari)
+    lengthVari <- xmlSize(vari)
     lReplace<-length(value[[i]])
-    lenDiff<-lToReplace-lReplace
     
-    if(lenDiff>0){
-      value[[i]]<-c(value[[i]],rep(value[[i]][lReplace],lenDiff))
-      #warning(paste("Supplied values for",var[i],"was too short",sep=" "))
+    if(lReplace>1){
+      newVar <- as.character(value[[i]][1])
+      for(k in 2:lReplace){
+        newVar <- paste(newVar,value[[i]][k],sep=" ")
+      }
+    }else{
+      newVar <- as.character(value[[i]])
     }
     
-    for(j in 1:lToReplace){
-      xmlValue(vari[[j]])<-as.character(value[[i]][j])
+    for(k in 1:lengthVari){
+      xmlValue(vari[[k]]) <- newVar
     }
     
   }
-  
+  addWd <- paste(wd,file,sep="/")
   if(overwrite){
     setwd(oldWD)
-    return(saveXML(pXML,file=file))
+    return(saveXML(pXML,file=addWd))
   }else{
     
     #Remove .apsim tag if present and add edited tag
-    newName<-paste(gsub(".xml","",file),"-edited",sep="")
+    newName<-paste(gsub(".xml","",addWd),"-edited",sep="")
     setwd(oldWD)
     return(saveXML(pXML,file=paste(newName,".xml",sep="")))
   }  
