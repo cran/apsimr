@@ -1,12 +1,13 @@
 #' Edit an APSIM Simulation
 #' 
-#' This function allows you to edit a file ending in ".apsim".
+#' This function allows you to edit an APSIM simulation file.
 #' 
 #' The variables specified by \code{var} within the .apsim file specified by \code{file} 
 #' in the working directory \code{wd} are edited. The old values are replaced with \code{value}, which
 #' is a list that has the same number of elements as the length of the vector \code{var}.  The current
 #' .apsim file will be overwritten if \code{overwrite} is set to \code{TRUE}; otherwise the file
-#' \emph{file-edited.apsim} will be created.  The name of the written file is returned.
+#' \emph{file-edited.apsim} will be created.  If the file was successfully edited, then the name
+#'  of the written file is returned.
 #' 
 #' @name edit_apsim
 #' @param file file ending in .apsim to be edited
@@ -56,7 +57,7 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
     return(edit_sim_file(file = file, wd = wd, var = var, value = value, overwrite = overwrite))
   }
   
-  fileNames <- dir(,pattern=".apsim$")
+  fileNames <- dir(,pattern=".apsim$",ignore.case=TRUE)
   
   if(length(fileNames)==0){
     stop("There are no .apsim files in the specified directory 'wd' to edit.")
@@ -94,30 +95,39 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
     return(saveXML(pXML,file=addWd))
   }else{
     
-    #Remove .apsim tag if present and add edited tag
-    newName<-paste(gsub(".apsim","",addWd),"-edited",sep="")
+    oldFileName <- gsub(".APSIM$","",gsub(".apsim$","",addWd))
+    newFileName <- paste0(oldFileName,"-edited.apsim")
     
     #Rename the simulation
-    wholeSim<-pXML[["//simulation"]]    
-    xmlAttrs(wholeSim)<-c(name=newName)
+    wholeSim<-pXML["//simulation"]  
+    for(i in 1:length(wholeSim)){
+      newName <- paste0(xmlAttrs(wholeSim[[i]]),"-edited")
+      xmlAttrs(wholeSim[[i]])<-c(name=newName)
+    }
     
     #Rename the output filename to match the new file name
-    outName<-pXML[["//outputfile/filename"]]
-    xmlValue(outName)<-paste(newName,".out",sep="")
+    outName<-pXML["//outputfile/filename"]
+    for(i in 1:length(outName)){
+      newName <- paste0(gsub(".out$","",xmlValue(outName[[i]])),"-edited")
+      xmlValue(outName[[i]])<-paste(newName,".out",sep="")
+    }
     
     #Also update title for output file
-    outTitle<-pXML[["//outputfile/title"]]
-    xmlValue(outTitle)<-newName
+    outTitle<-pXML["//outputfile/title"]
+    for(i in 1:length(outTitle)){
+      newName <- paste0(xmlValue(outTitle[[i]]),"-edited")
+      xmlValue(outTitle[[i]])<-newName
+    }   
     
     setwd(oldWD)
-    return(saveXML(pXML,file=paste(newName,".apsim",sep="")))
+    return(saveXML(pXML,file=newFileName))
   }
 }
 
 #' Edit an APSIM Module File
 #' 
-#' APSIM helper files, such as "Soil.xml" have a different format from .apsim files
-#' and are therefore edited differently.
+#' APSIM helper files, such as "Soil.xml", have a different format from .apsim files
+#' and are therefore handled separately
 #' 
 #' APSIM uses .xml files to dictate how certain processes are carried out.  Similar to
 #' \code{\link{edit_apsim}} this function edits a file that will be used in an APSIM simulation.  Unlike
@@ -126,7 +136,8 @@ edit_apsim <- function(file, wd = getwd(), var, value, overwrite = FALSE){
 #' in the working directory \code{wd} are edited. The old values are replaced with \code{value}, which
 #' is a list that has the same number of elements as the vector \code{var} is long.  The current
 #' .xml file will be overwritten if \code{overwrite} is set to \code{TRUE}; otherwise the file
-#' \emph{file-edited.xml} will be created.  The name of the written file is returned.
+#' \emph{file-edited.xml} will be created.  If the file was successfully edited, then the name
+#'  of the written file is returned.
 #' 
 #' @name edit_sim_file
 #' @param file .xml module file to be edited

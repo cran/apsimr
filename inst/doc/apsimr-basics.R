@@ -5,13 +5,13 @@
 #  results <- apsim(exe = apsimExe, wd = apsimWd, files = toRun)
 
 ## ----p1,eval=FALSE-------------------------------------------------------
-#  plot(results[[2]], geom = 'line')
+#  plot(results$"Continuous Wheat", geom = 'line')
 
 ## ----p2,eval=FALSE-------------------------------------------------------
-#  plot(results[[2]], one_plot = TRUE, geom = 'line') + theme_bw()
+#  plot(results$"Continuous Wheat", one_plot = TRUE, geom = 'line') + theme_bw()
 
 ## ----p3,eval=FALSE-------------------------------------------------------
-#  plot(results[[2]], y = 'yield') + geom_line(colour = 'red') + theme_bw()
+#  plot(results$"Continuous Wheat", y = 'yield') + geom_line(colour = 'red') + theme_bw()
 
 ## ----file,eval=FALSE-----------------------------------------------------
 #  apsimFile <- "Canopy.apsim"
