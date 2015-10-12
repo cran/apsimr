@@ -42,8 +42,13 @@ plot.apsim<-function(x, y = NULL, ask = TRUE, one_plot = FALSE, ...){
   if(is.null(y)){
     y<-cNames[-idNum]
   }else{
-    if(!(y%in%cNames)){
-      stop(paste(y,"is not an available response."))
+    
+    possibleY <- try(match.arg(arg=y,choices=cNames[-idNum]),silent=T)
+    
+    if(class(possibleY)=="try-error"){
+      stop(paste(y,"is not an available response; choose from:",paste(cNames,collapse=', ')))
+    }else{
+      y <- possibleY
     }
   }
   

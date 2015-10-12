@@ -1,3 +1,12 @@
+apsimr version 1.2
+===================================================================
+Minor Changes -
+-------------------------------------------------------------------
+* In the "plot()" function, the argument "y" is more forgiving and a list
+of available variables is printed if the requested one doesn't exist.
+* Next generation APSIM simulations can now be run using the "apsim()" function.
+
+
 apsimr version 1.1
 ===================================================================
 Bug Fixes -

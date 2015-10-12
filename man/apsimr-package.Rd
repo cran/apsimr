@@ -12,15 +12,15 @@ The \bold{A}gricultural \bold{P}roduction \bold{S}ystems s\bold{IM}ulator (APSIM
 \tabular{ll}{
 Package: \tab apsimr\cr
 Type: \tab Package\cr
-Version: \tab 1.0\cr
-Date: \tab 2015-05-04\cr
+Version: \tab 1.2\cr
+Date: \tab 2015-10-09\cr
 License: \tab GPL(>=3) \cr
 }
 }
 \author{
 Bryan Stanfill
 
-Maintainer: Bryan Stanfill <bryan.stanfill@csiro.au>
+Maintainer: Bryan Stanfill <bstanfill2003@gmail.com>
 }
 \references{
 See \url{http://www.apsim.info/} for information about APSIM.
